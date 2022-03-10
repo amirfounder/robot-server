@@ -92,18 +92,6 @@ def handle_message_data(message_data: str | dict):
     return 'no valid functions for your input'
 
 
-def from_bgra_to_bgr(image):
-    return cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
-
-
-def as_rgb_from_bgr(image):
-    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-
-def as_bgr_from_rgb(image):
-    return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-
 def find_red_percent_in_image(image_hsv):
     # create mask of all red
     RED_MIN = numpy.array([0, 10, 10], numpy.uint8)
