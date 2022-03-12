@@ -3,7 +3,7 @@ import json
 from threading import Thread
 import websockets
 from websockets.server import WebSocketServerProtocol
-from handler import handle_message_data
+from src.handler import handle_message_data
 
 
 class WebSocketServer:
@@ -15,70 +15,81 @@ class WebSocketServer:
         while len(self.websocket_connection_map.items()) == 0:
             pass
 
-    def run_server(self):
-        asyncio.run(self.serve())
-
     def run_server_in_separate_thread(self):
         thread = Thread(target=self.run_server, daemon=True)
         thread.start()
-    
-    def start_task(self, task_name: str = None, id: str = None):
-        asyncio.run(self.start_task_async(task_name, id))
 
-    async def start_task_async(self, task_name: str = None, id: str = None):
-        message = {
-            'requesId': None,
-            'method': 'start-task',
-            'data': { 'taskName': task_name }
-        }
-
-        connections = self.websocket_connection_map.items()
-        
-        server = None
-
-        if len(connections) == 0:
-            print('Failed to start task. No connections mapped ...')
-            return
-
-        if len(connections) == 1 or not id:
-            id, server = list(connections)[0]
-
-        server: WebSocketServerProtocol = self.websocket_connection_map[id]
-        await server.send(json.dumps(message))
-        
-
-    async def handler(self, websocket: WebSocketServerProtocol):
-        print('Connection received ...')
-        while True:
-            if (message := await websocket.recv()):
-                print(message)
-
-                message = json.loads(message)
-                message_id = message.get('id')
-                message_data = message.get('data', '')
-
-                if websocket not in self.websocket_connection_map.values():
-                    if isinstance(message_data, str):
-                        if message_data not in self.websocket_connection_map.keys():
-                            self.websocket_connection_map[message_data] = websocket
-
-                if isinstance(message_data, list):
-                    [print(x) for x in message_data]
-                    response_data = 'Received hashtags'
-
-                else:
-                    response_data = handle_message_data(message_data)
-
-                response = {
-                    'requestId': message_id,
-                    'data': response_data or 'Done'
-                }
-
-                response = json.dumps(response)
-
-                await websocket.send(response)
-                print('sent message')
+    def run_server(self):
+        asyncio.run(self.serve())
 
     async def serve(self):
         async with websockets.serve(self.handler, "", 8001):
             await asyncio.Future()
+
+    def run_server_in_separate_thread(self):
+        thread = Thread(target=self.run_server, daemon=True)
+        thread.start()
+
+    def start_task(self, task_name: str = None, id: str = None):
+        asyncio.run(self.start_task_async(task_name, id))
+
+    def get_connection(self, id):
+        id_connection_pairs = self.websocket_connection_map.items()
+
+        if len(id_connection_pairs) == 0:
+            return None
+
+        if len(id_connection_pairs) == 1 or not id:
+            return list(id_connection_pairs)[0][1]
+
+        if len(id_connection_pairs) == 2:
+            return self.websocket_connection_map[id]
+
+    async def start_task_async(self, task_name: str = None, id: str = None):
+        connection = self.get_connection(id)
+        await connection.send(json.dumps({
+            'requesId': None,
+            'method': 'start-task',
+            'data': {'name': task_name}
+        }))
+
+    async def handler(self, connection: WebSocketServerProtocol):
+        print('Connection received ...')
+        while True:
+            if (message := await connection.recv()):
+                print(message)
+
+                message = json.loads(message)
+                id = message.get('id')
+                data = message.get('data', {})
+                method = message.get('method')
+
+                if method == 'register-connection':
+                    self.register_connection(data.get('url'), connection)
+
+                if method == 'unregister-connection':
+                    self.unregister_connection(data.get('url'), connection)
+
+                response = handle_message_data(data)
+
+                await connection.send(json.dumps({
+                    'requestId': id,
+                    'data': response
+                }))
+
+                print('returned message')
+
+    def register_connection(self, url: str, connection: WebSocketServerProtocol):
+        if not url:
+            return
+
+        if connection in self.websocket_connection_map.values():
+            return
+
+        if url in self.websocket_connection_map.keys():
+            return
+
+        self.websocket_connection_map[url] = connection
+
+    def unregister_connection(self, url):
+        self.websocket_connection_map.pop(url, None)

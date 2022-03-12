@@ -1,4 +1,4 @@
-from time import sleep, time
+from time import sleep
 import webbrowser
 from src.socket import WebSocketServer
 
@@ -8,9 +8,11 @@ def main():
     socket.run_server_in_separate_thread()
 
     chrome_path = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
-    url = 'https://www.google.com'
-    webbrowser.get(chrome_path).open(url)
 
+    webbrowser.get(chrome_path).open('https://instagram.com')
+    
+    sleep(5)
+    
     socket.wait_until_first_connection()
     socket.start_task('query-hashtags')
 
