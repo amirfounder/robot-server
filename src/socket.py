@@ -37,17 +37,17 @@ class WebSocketServer:
         thread = Thread(target=self.run_server, daemon=True)
         thread.start()
 
-    def start_task(self, task_name: str = None, url: str = None):
-        asyncio.run(self.start_task_async(task_name, url))
+    def start_task(self, task_name: str = None, url: str = None, **kwargs):
+        asyncio.run(self.start_task_async(task_name, url, **kwargs))
 
-    async def start_task_async(self, task_name: str = None, url: str = None):
+    async def start_task_async(self, url: str = None, task_name: str = None, **kwargs):
         if (connection := self.get_connection(url)):
             await connection.send(json.dumps({
                 'requestId': None,
                 'data': {
                     'method': 'start-task',
                     'name': task_name,
-                    'startingHashtag': '#thisworks'
+                    'startingHashtag': kwargs.get('startingHashtag', '#oops')
                 }
             }))
             print('sent message')

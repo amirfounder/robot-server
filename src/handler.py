@@ -1,4 +1,6 @@
 from math import sqrt
+from time import sleep
+from turtle import back
 import keyboard
 import pyautogui
 import mouse
@@ -11,13 +13,15 @@ from src.handler_service import *
 from PIL import Image
 
 screenshots = []
-
+items = []
 
 def handle_message_data(data: dict):
     method = data.get('method')
 
     if method == 'save-data':
-        pass
+        data_to_save = data.get('data', [])
+        items.extend(data_to_save)
+        print(len(items))
 
     if method == 'mouse-click':
         coordinates = data.get('coordinates')
@@ -33,8 +37,9 @@ def handle_message_data(data: dict):
 
     if method == 'keyboard-backspace':
         backspace_count = data.get('count', 0)
-        [keyboard.press_and_release('backspace')
-         for _ in range(backspace_count)]
+        for _ in range(backspace_count):
+            keyboard.press_and_release('backspace')
+            sleep(.05)
         return 'SUCCESS'
 
     if method == 'screen-capture':
@@ -56,8 +61,6 @@ def handle_message_data(data: dict):
                          for img in last_two]
 
         before_gray, after_gray = last_two_gray
-        save_nparray_to_file(before_gray, 'before_gray')
-        save_nparray_to_file(after_gray, 'after_gray')
         score, diff = compare_ssm(before_gray, after_gray, full=True)
         diff = (diff * 255).astype('uint8')
         print('SSIM: {}'.format(score))
@@ -67,9 +70,6 @@ def handle_message_data(data: dict):
         cnts = cv2.findContours(
             thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
-
-        greatest_percent = 0
-        greatest_area = 0
 
         boxes = []
 

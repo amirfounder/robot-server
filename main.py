@@ -12,7 +12,7 @@ def main():
     webbrowser.get(chrome_path).open('https://instagram.com/')
     
     socket.wait_until_first_connection()
-    socket.start_task('get-hashtag-recommendations', 'https://instagram.com/')
+    socket.start_task('https://instagram.com/', 'get-hashtag-recommendations', startingHashtag='#blue')
 
     while True:
         print('waiting ...')
