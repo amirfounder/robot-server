@@ -4,14 +4,28 @@ from threading import Thread
 from time import sleep
 import websockets
 from websockets.server import WebSocketServerProtocol
+from websockets.exceptions import ConnectionClosed
 from src.handler import handle_message_data
+import webbrowser
 
 
 class WebSocketServer:
 
+    chrome_path = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
+
     def __init__(self) -> None:
         self.websocket_connection_map: dict[str,
                                             dict[str, WebSocketServerProtocol | int]] = {}
+
+    def open_url_and_wait_for_connection(self, url: str):
+        if url in self.websocket_connection_map.keys():
+            print('URL with connection')
+        url_connection_pairs = self.websocket_connection_map.items()
+
+        webbrowser.get(self.chrome_path).open(url)
+        while True:
+            url, connection = self.websocket_connection_map.get(url)
+
 
     def wait_until_first_connection(self):
         first_connection_made = False        
@@ -42,41 +56,47 @@ class WebSocketServer:
 
     async def start_task_async(self, url: str = None, task_name: str = None, **kwargs):
         if (connection := self.get_connection(url)):
-            await connection.send(json.dumps({
+            message = {
                 'requestId': None,
                 'data': {
                     'method': 'start-task',
                     'name': task_name,
-                    'startingHashtag': kwargs.get('startingHashtag', '#oops')
                 }
-            }))
-            print('sent message')
+            }
+            message.get('data', {}).update(kwargs)
+            message = json.dumps(message)
+            await connection.send(message)
+            print(f'sent message ... {message}')
 
     async def handler(self, connection: WebSocketServerProtocol):
         print('Connection received ...')
-        while True:
-            if (message := await connection.recv()):
-                print(message)
+        try:
+            while True:
+                if (message := await connection.recv()):
+                    print(message)
 
-                message = json.loads(message)
-                id = message.get('id')
-                data = message.get('data', {})
-                method = data.get('method')
+                    message = json.loads(message)
+                    id = message.get('id')
+                    data = message.get('data', {})
+                    method = data.get('method')
 
-                if method == 'register-connection':
-                    self.register_connection(data.get('url'), connection)
+                    if method == 'register-connection':
+                        self.register_connection(data.get('url'), connection)
 
-                if method == 'unregister-connection':
-                    self.unregister_connection(data.get('url'), connection)
+                    if method == 'unregister-connection':
+                        self.unregister_connection(data.get('url'), connection)
 
-                response = handle_message_data(data)
+                    response = handle_message_data(data)
 
-                await connection.send(json.dumps({
-                    'requestId': id,
-                    'data': response
-                }))
+                    await connection.send(json.dumps({
+                        'requestId': id,
+                        'data': response
+                    }))
 
-                print('returned message')
+                    print('returned message')
+        except ConnectionClosed as e:
+            url, _ = next(iter([pair for pair in self.websocket_connection_map.items()if pair[1] == connection]), None)
+            self.websocket_connection_map.pop(url, None)
 
     def get_connection(self, url):
         url_connection_pairs = self.websocket_connection_map.items()

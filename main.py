@@ -9,10 +9,12 @@ def main():
 
     chrome_path = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
 
-    webbrowser.get(chrome_path).open('https://instagram.com/')
+    webbrowser.get(chrome_path).open('https://accounts.google.com/')
     
     socket.wait_until_first_connection()
-    socket.start_task('https://instagram.com/', 'get-hashtag-recommendations', startingHashtag='#blue')
+    # socket.start_task('https://instagram.com/', 'get-hashtag-recommendations', startingHashtag='#blue')
+    new_profile = dict(firstName='lol', lastName='hehe')
+    socket.start_task('https://accounts.google.com/', 'create-google-account', profile=new_profile)
 
     while True:
         print('waiting ...')
