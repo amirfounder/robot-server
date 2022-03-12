@@ -9,12 +9,10 @@ def main():
 
     chrome_path = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
 
-    webbrowser.get(chrome_path).open('https://instagram.com')
-    
-    sleep(5)
+    webbrowser.get(chrome_path).open('https://instagram.com/')
     
     socket.wait_until_first_connection()
-    socket.start_task('query-hashtags')
+    socket.start_task('get-hashtag-recommendations', 'https://instagram.com/')
 
     while True:
         print('waiting ...')

@@ -1,5 +1,10 @@
 import numpy
 import cv2
+from PIL import Image
+
+
+def save_nparray_to_file(image, filename):
+    Image.fromarray(image).save(f'{filename}.png')
 
 
 def find_red_percent_in_image(image_hsv):
@@ -7,6 +12,7 @@ def find_red_percent_in_image(image_hsv):
     RED_MIN = numpy.array([0, 10, 10], numpy.uint8)
     RED_MAX = numpy.array([2, 255, 255], numpy.uint8)
 
+    save_nparray_to_file(image_hsv, 'image_hsv')
     mask = cv2.inRange(image_hsv, RED_MIN, RED_MAX)
 
     # calc percent of mask
@@ -15,5 +21,4 @@ def find_red_percent_in_image(image_hsv):
     count_white = cv2.countNonZero(mask)
     percent_white = (count_white/num_pixels) * 100
     percent_white = round(percent_white, 2)
-    print(percent_white)
     return percent_white
