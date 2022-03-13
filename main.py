@@ -1,20 +1,32 @@
 from time import sleep
-import webbrowser
 from src.socket import WebSocketServer
+from src.profile_generators import *
+from src.profile_crud import *
+
+
+def start_task_get_hashtag_recommendations():
+    pass
+
+
+GOOGLE_ACCOUNTS_URL = 'https://accounts.google.com/signin/v2/identifier?flowName=GlifWebSignIn&flowEntry=ServiceLogin'
 
 
 def main():
+    profile = select_profile_by_id(1)
     socket = WebSocketServer()
     socket.run_server_in_separate_thread()
 
-    chrome_path = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
+    socket.open_url(GOOGLE_ACCOUNTS_URL)
+    url, _ = socket.wait_for_connection()
 
-    webbrowser.get(chrome_path).open('https://accounts.google.com/')
+    socket.start_task(url, 'create-google-account-step-1')
+    url, _ = socket.wait_for_connection()
     
-    socket.wait_until_first_connection()
-    # socket.start_task('https://instagram.com/', 'get-hashtag-recommendations', startingHashtag='#blue')
-    new_profile = dict(firstName='lol', lastName='hehe')
-    socket.start_task('https://accounts.google.com/', 'create-google-account', profile=new_profile)
+    socket.start_task(url, 'create-google-account-step-2', profile=profile)
+    url, _ = socket.wait_for_connection()
+
+    socket.start_task(url, 'create-google-account-step-3', profile=profile)
+    url, _ = socket.wait_for_connection()
 
     while True:
         print('waiting ...')
